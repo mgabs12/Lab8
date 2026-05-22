@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic Tac Toe – v1.0</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --border: #2e2e2e;
+      --x-color: #e63946;
+      --o-color: #4cc9f0;
+      --text: #f0f0f0;
+      --muted: #666;
+      --accent: #f8f32b;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .version-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      letter-spacing: -1px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    h1 span { color: var(--accent); }
+
+    .status {
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      min-height: 1.4rem;
+      text-align: center;
+      transition: color 0.3s;
+    }
+
+    .status.winner { color: var(--accent); font-weight: 700; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 110px);
+      grid-template-rows: repeat(3, 110px);
+      gap: 6px;
+      margin-bottom: 2rem;
+    }
+
+    .cell {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .cell:hover:not(.taken) {
+      background: #242424;
+      transform: scale(0.97);
+    }
+
+    .cell.taken { cursor: default; }
+    .cell.x { color: var(--x-color); }
+    .cell.o { color: var(--o-color); }
+
+    .cell.winning {
+      background: #1f1f00;
+      border-color: var(--accent);
+    }
+
+    .controls {
+      display: flex;
+      gap: 1rem;
+    }
+
+    button {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 0.6rem 1.4rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    button:hover {
+      background: var(--surface);
+      border-color: var(--text);
+    }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+      font-weight: 700;
+    }
+
+    button.primary:hover {
+      background: #d4cf00;
+    }
+
+    footer {
+      margin-top: 3rem;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="version-badge">v1.0 — Básico</div>
+  <h1>Tic <span>Tac</span> Toe</h1>
+</header>
+
+<div class="status" id="status">Turno de X</div>
+
+<div class="board" id="board">
+  <div class="cell" data-index="0"></div>
+  <div class="cell" data-index="1"></div>
+  <div class="cell" data-index="2"></div>
+  <div class="cell" data-index="3"></div>
+  <div class="cell" data-index="4"></div>
+  <div class="cell" data-index="5"></div>
+  <div class="cell" data-index="6"></div>
+  <div class="cell" data-index="7"></div>
+  <div class="cell" data-index="8"></div>
+</div>
+
+<div class="controls">
+  <button class="primary" onclick="resetGame()">Reiniciar</button>
+</div>
+
+<footer>Ingeniería de Software II — Lab 8</footer>
+
+<script>
+  const WINS = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+
+  let board = Array(9).fill(null);
+  let currentPlayer = 'X';
+  let gameOver = false;
+
+  const cells = document.querySelectorAll('.cell');
+  const statusEl = document.getElementById('status');
+
+  cells.forEach(cell => {
+    cell.addEventListener('click', () => {
+      const i = parseInt(cell.dataset.index);
+      if (gameOver || board[i]) return;
+
+      board[i] = currentPlayer;
+      cell.textContent = currentPlayer;
+      cell.classList.add('taken', currentPlayer.toLowerCase());
+
+      const winner = checkWinner();
+      if (winner) {
+        highlight(winner);
+        statusEl.textContent = `¡Ganó ${currentPlayer}!`;
+        statusEl.classList.add('winner');
+        gameOver = true;
+        return;
+      }
+
+      if (board.every(Boolean)) {
+        statusEl.textContent = '¡Empate!';
+        statusEl.classList.add('winner');
+        gameOver = true;
+        return;
+      }
+
+      currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+      statusEl.textContent = `Turno de ${currentPlayer}`;
+    });
+  });
+
+  function checkWinner() {
+    return WINS.find(([a,b,c]) =>
+      board[a] && board[a] === board[b] && board[a] === board[c]
+    ) || null;
+  }
+
+  function highlight(combo) {
+    combo.forEach(i => cells[i].classList.add('winning'));
+  }
+
+  function resetGame() {
+    board = Array(9).fill(null);
+    currentPlayer = 'X';
+    gameOver = false;
+    cells.forEach(c => {
+      c.textContent = '';
+      c.className = 'cell';
+    });
+    statusEl.textContent = 'Turno de X';
+    statusEl.classList.remove('winner');
+  }
+</script>
+</body>
+</html>
